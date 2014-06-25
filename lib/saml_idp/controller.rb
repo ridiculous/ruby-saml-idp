@@ -60,14 +60,13 @@ module SamlIdp
       @saml_acs_url = @saml_request[/AssertionConsumerServiceURL=['"](.+?)['"]/, 1]
     end
 
-    def encode_response(opts = {})
+    def encode_response
       now = Time.now.utc
-      @name_id = 'ryan@gmail.com'
       response_id, reference_id = UUID.generate, UUID.generate
       audience_uri = saml_acs_url[/^(.*?\/\/.*?\/)/, 1]
       issuer_uri = (defined?(request) && request.url) || "http://example.com"
 
-      assertion = %[<Assertion xmlns="urn:oasis:names:tc:SAML:2.0:assertion" ID="_#{reference_id}" IssueInstant="#{now.iso8601}" Version="2.0"><Issuer>#{issuer_uri}</Issuer><Subject><NameID Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress">#{@name_id}</NameID><SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><SubjectConfirmationData InResponseTo="#{@saml_request_id}" NotOnOrAfter="#{(now+3*60).iso8601}" Recipient="#{@saml_acs_url}"></SubjectConfirmationData></SubjectConfirmation></Subject><Conditions NotBefore="#{(now-5).iso8601}" NotOnOrAfter="#{(now+60*60).iso8601}"><AudienceRestriction><Audience>#{audience_uri}</Audience></AudienceRestriction></Conditions>#{attr_statement}<AuthnStatement AuthnInstant="#{now.iso8601}" SessionIndex="_#{reference_id}"><AuthnContext><AuthnContextClassRef>urn:federation:authentication:windows</AuthnContextClassRef></AuthnContext></AuthnStatement></Assertion>]
+      assertion = %[<Assertion xmlns="urn:oasis:names:tc:SAML:2.0:assertion" ID="_#{reference_id}" IssueInstant="#{now.iso8601}" Version="2.0"><Issuer>#{issuer_uri}</Issuer><Subject><SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><SubjectConfirmationData InResponseTo="#{@saml_request_id}" NotOnOrAfter="#{(now+3*60).iso8601}" Recipient="#{@saml_acs_url}"></SubjectConfirmationData></SubjectConfirmation></Subject><Conditions NotBefore="#{(now-5).iso8601}" NotOnOrAfter="#{(now+60*60).iso8601}"><AudienceRestriction><Audience>#{audience_uri}</Audience></AudienceRestriction></Conditions>#{attr_statement}<AuthnStatement AuthnInstant="#{now.iso8601}" SessionIndex="_#{reference_id}"><AuthnContext><AuthnContextClassRef>urn:federation:authentication:windows</AuthnContextClassRef></AuthnContext></AuthnStatement></Assertion>]
 
       digest_value = Base64.encode64(algorithm.digest(assertion)).gsub(/\n/, '')
 
@@ -92,10 +91,11 @@ module SamlIdp
     end
 
     def attr_statement
-      attrs = '<AttributeStatement>'
-      attrs << %[<Attribute Name="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"><AttributeValue>#{@name_id}</AttributeValue></Attribute>]
-      attrs << custom_attributes
-      attrs << '</AttributeStatement>'
+      unless custom_attributes.empty?
+        attrs = '<AttributeStatement>'
+        attrs << custom_attributes
+        attrs << '</AttributeStatement>'
+      end
     end
 
     def custom_attributes
