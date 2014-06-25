@@ -3,14 +3,9 @@ module SamlIdp
   class IdpController < ActionController::Base
     include SamlIdp::Controller
 
-    unloadable
-
     protect_from_forgery
 
     before_filter :validate_saml_request
-
-    def new
-    end
 
     def create
       @saml_response = idp_make_saml_response
