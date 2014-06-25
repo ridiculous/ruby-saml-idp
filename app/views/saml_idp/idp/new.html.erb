@@ -1,7 +1,7 @@
-<% if @saml_idp_fail_msg %>
-  <div id="saml_idp_fail_msg" class="flash error"><%= @saml_idp_fail_msg %></div>
-<% end %>
-
+<h3>The fingerprint of the X509 Certificate</h3>
+<div>
+  <b><%= SamlIdp::Default::FINGERPRINT %></b>
+</div>
 <%= form_tag do %>
   <%= hidden_field_tag("SAMLRequest", params[:SAMLRequest]) %>
 
@@ -17,5 +17,6 @@
 
   <p>
     <%= submit_tag "Sign in", :class => "button big blueish" %>
+    <%= link_to('Go back', root_path) %>
   </p>
 <% end %>
